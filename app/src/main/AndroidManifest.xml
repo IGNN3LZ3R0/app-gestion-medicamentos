@@ -2,10 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permisos de notificaciones -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Permisos de alarmas exactas -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+
+    <!-- Permiso de vibración -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- Permiso para despertar el dispositivo (opcional pero útil) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
         android:allowBackup="true"
@@ -17,6 +25,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Expesnsetrarcker"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -24,7 +33,6 @@
             android:theme="@style/Theme.Expesnsetrarcker">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -32,7 +40,8 @@
         <receiver
             android:name=".alarm.AlarmReceiver"
             android:enabled="true"
-            android:exported="false"/>
+            android:exported="false"
+            android:directBootAware="true"/>
     </application>
 
 </manifest>
