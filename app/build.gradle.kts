@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.expesnsetrarcker"
+    namespace = "com.example.medireminder"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.expesnsetrarcker"
+        applicationId = "com.example.medireminder"
         minSdk = 36
         targetSdk = 36
         versionCode = 1

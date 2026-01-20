@@ -1,4 +1,4 @@
-package com.example.themes.ui.theme
+package com.example.medireminder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

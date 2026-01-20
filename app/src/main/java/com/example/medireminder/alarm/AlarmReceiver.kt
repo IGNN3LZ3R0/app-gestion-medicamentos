@@ -1,4 +1,4 @@
-package com.example.expesnsetrarcker.alarm
+package com.example.medireminder.alarm
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,43 +13,53 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
-import com.example.expesnsetrarcker.MainActivity
-import com.example.expesnsetrarcker.R
+import com.example.medireminder.MainActivity
+import com.example.medireminder.R
+import com.example.medireminder.data.local.AppDatabase
+import com.example.medireminder.data.repository.MedicineRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-/**
- * BroadcastReceiver mejorado con sonido y vibración garantizados.
- * Funciona incluso con la app completamente cerrada.
- *
- */
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        // Primero mostramos la notificación
-        mostrarNotificacion(context)
+        val medicineId = intent.getIntExtra("MEDICINE_ID", -1)
+        val medicineName = intent.getStringExtra("MEDICINE_NAME") ?: "Medicamento"
+        val medicineDosis = intent.getStringExtra("MEDICINE_DOSIS") ?: ""
 
-        // Luego activamos vibración manualmente
+        // Mostrar notificación
+        mostrarNotificacion(context, medicineId, medicineName, medicineDosis)
+
+        // Activar vibración
         activarVibracion(context)
 
-        // Finalmente reprogramamos para el día siguiente
-        val hora = ReminderPreferences.obtenerHora(context)
-        val minuto = ReminderPreferences.obtenerMinuto(context)
-        ReminderScheduler.programarRecordatorio(context, hora, minuto)
+        // Reprogramar para el día siguiente
+        CoroutineScope(Dispatchers.IO).launch {
+            val database = AppDatabase.getInstance(context)
+            val repository = MedicineRepository(database.medicineDao())
+            val medicina = repository.obtenerPorId(medicineId)
+            
+            medicina?.let {
+                if (it.activo) {
+                    MedicineScheduler.programarRecordatorio(context, it)
+                }
+            }
+        }
     }
 
     private fun activarVibracion(context: Context) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Android 12+ (API 31+)
                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
                 val vibrator = vibratorManager?.defaultVibrator
 
                 vibrator?.let {
-                    val pattern = longArrayOf(0, 500, 200, 500, 200, 500) // Patrón más largo
+                    val pattern = longArrayOf(0, 500, 200, 500, 200, 500)
                     val effect = VibrationEffect.createWaveform(pattern, -1)
                     it.vibrate(effect)
                 }
             } else {
-                // Android 11 y anteriores
                 @Suppress("DEPRECATION")
                 val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
 
@@ -69,11 +79,16 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun mostrarNotificacion(context: Context) {
+    private fun mostrarNotificacion(
+        context: Context,
+        medicineId: Int,
+        medicineName: String,
+        medicineDosis: String
+    ) {
         val notificationManager = context
             .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Crear el canal con sonido y vibración mejorados
+        // Crear canal de notificación
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
@@ -84,23 +99,15 @@ class AlarmReceiver : BroadcastReceiver() {
 
             val canal = NotificationChannel(
                 CHANNEL_ID,
-                "Recordatorios de Gastos",
+                "Recordatorios de Medicinas",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Recordatorios diarios para registrar tus gastos"
-
-                // Configurar vibración
+                description = "Recordatorios para tomar tus medicinas"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
-
-                // Configurar sonido
                 setSound(soundUri, audioAttributes)
-
-                // Configurar luces (opcional pero ayuda)
                 enableLights(true)
                 lightColor = android.graphics.Color.BLUE
-
-                // Asegurar que se muestre en la pantalla de bloqueo
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
 
@@ -113,54 +120,43 @@ class AlarmReceiver : BroadcastReceiver() {
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            medicineId,
             openIntent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Obtener URI de sonido
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        // Notificación con todas las configuraciones
+        // Construir notificación
+        val dosisText = if (medicineDosis.isNotEmpty()) " - $medicineDosis" else ""
+        
         val notificacion = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("💰 ¿Registraste tus gastos?")
-            .setContentText("No olvides anotar lo que gastaste hoy")
+            .setContentTitle("💊 Hora de tomar tu medicina")
+            .setContentText("$medicineName$dosisText")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Es importante mantener un registro de tus gastos diarios. ¡Toca aquí para registrar!")
+                    .bigText("Es hora de tomar: $medicineName$dosisText\n\nToca para abrir la aplicación")
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-
-            // Configurar sonido
             .setSound(soundUri)
-
-            // Configurar vibración
             .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
-
-            // Configurar defaults (importante para garantizar sonido y vibración)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-
-            // Mostrar en pantalla de bloqueo
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
-            // Añadir un action button (opcional)
             .addAction(
                 R.drawable.ic_launcher_foreground,
-                "Registrar ahora",
+                "Abrir app",
                 pendingIntent
             )
-
             .build()
 
-        notificationManager.notify(NOTIFICATION_ID, notificacion)
+        notificationManager.notify(medicineId, notificacion)
     }
 
     companion object {
-        const val CHANNEL_ID = "expense_reminder_channel"
-        const val NOTIFICATION_ID = 1001
+        const val CHANNEL_ID = "medicine_reminder_channel"
     }
-}
+}   
