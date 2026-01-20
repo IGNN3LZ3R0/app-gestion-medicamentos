@@ -159,4 +159,4 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val CHANNEL_ID = "medicine_reminder_channel"
     }
-}   
+}

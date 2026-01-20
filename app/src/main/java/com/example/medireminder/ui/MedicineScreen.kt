@@ -1,4 +1,3 @@
-
 package com.example.medireminder.ui
 
 import androidx.compose.foundation.clickable
@@ -21,8 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.medireminder.data.local.MedicineEntity
-
-
 
 // Pantalla principal de medicinas
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +71,7 @@ fun MedicineScreen(
                 onHoraChange = { h, m -> viewModel.actualizarHora(h, m) },
                 onNotasChange = { viewModel.actualizarNotas(it) },
                 onGuardar = {
-                    val id = viewModel.guardarMedicina()
+                    viewModel.guardarMedicina()
                 },
                 onCancelarEdicion = { viewModel.cancelarEdicion() }
             )
@@ -127,13 +124,6 @@ fun MedicineScreen(
             }
         }
     }
-}
-
-onHoraChange(nuevaHora, nuevoMinuto)
-mostrarTimePicker = false
-},
-onDismiss = { mostrarTimePicker = false }
-)
 }
 
 // Formulario para agregar/editar medicina
@@ -286,11 +276,6 @@ fun FormularioMedicina(
         )
     }
 }
-horaInicial: Int,
-minutoInicial: Int,
-onConfirm: (Int, Int) -> Unit,
-onDismiss: () -> Unit
-is24Hour = true
 
 // Diálogo para seleccionar hora
 @OptIn(ExperimentalMaterial3Api::class)
@@ -306,6 +291,7 @@ fun TimePickerDialog(
         initialMinute = minutoInicial,
         is24Hour = true
     )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Seleccionar hora") },
@@ -326,8 +312,6 @@ fun TimePickerDialog(
         }
     )
 }
-horizontalArrangement = Arrangement.SpaceBetween,
-verticalAlignment = Alignment.CenterVertically
 
 // Item para mostrar cada medicina
 @Composable

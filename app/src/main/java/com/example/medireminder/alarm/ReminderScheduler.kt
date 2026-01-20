@@ -1,4 +1,4 @@
-package com.example.expesnsetrarcker.alarm
+package com.example.medireminder.alarm
 
 import android.app.AlarmManager
 import android.app.PendingIntent

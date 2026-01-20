@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.medireminder"
-        minSdk = 36
-        targetSdk = 36
+        minSdk = 35
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
